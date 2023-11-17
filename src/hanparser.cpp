@@ -1,6 +1,8 @@
 #include "hanparser.h"
 
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "datatype.h"
 
@@ -42,7 +44,7 @@ void HanParser::parseLines(const std::vector<std::string> &lines) const
 
             auto value = line.substr(splitPos + 1);
 
-            switch(dt.type()) {
+            switch (dt.type()) {
             case DataType::Type::None:
                 if (dt.property() == DataType::Property::TimeStamp) {
                     data.timestamp = parseTimestamp(value);
@@ -81,17 +83,28 @@ void HanParser::parseLines(const std::vector<std::string> &lines) const
         }
     }
 
-    std::cout << "Data" << std::endl;
-    std::cout << "  T : " << data.totalInPower << " (" << data.totalOutPower << " diff: " << data.totalInPower - data.totalOutPower << ")" << std::endl;
-    std::cout << "  L1: " << data.inPower.l1 << " (" << data.outPower.l1 << " diff: " << data.inPower.l1 - data.outPower.l1 << ")" << std::endl;
-    std::cout << "  L2: " << data.inPower.l2 << " (" << data.outPower.l2 << " diff: " << data.inPower.l2 - data.outPower.l2 << ")" << std::endl;
-    std::cout << "  L3: " << data.inPower.l3 << " (" << data.outPower.l3 << " diff: " << data.inPower.l3 - data.outPower.l3 << ")" << std::endl;
-
+    std::cout << "Data " << data.timestamp.time_since_epoch().count()/1000000000 << std::endl;
+    std::cout << "  T : " << data.totalInPower << " (" << data.totalOutPower
+              << " diff: " << data.totalInPower - data.totalOutPower << ")" << std::endl;
+    std::cout << "  L1: " << data.inPower.l1 << " (" << data.outPower.l1
+              << " diff: " << data.inPower.l1 - data.outPower.l1 << ")" << std::endl;
+    std::cout << "  L2: " << data.inPower.l2 << " (" << data.outPower.l2
+              << " diff: " << data.inPower.l2 - data.outPower.l2 << ")" << std::endl;
+    std::cout << "  L3: " << data.inPower.l3 << " (" << data.outPower.l3
+              << " diff: " << data.inPower.l3 - data.outPower.l3 << ")" << std::endl;
 }
 
-std::chrono::time_point<std::chrono::system_clock> HanParser::parseTimestamp(const std::string &value) const
+std::chrono::time_point<std::chrono::system_clock> HanParser::parseTimestamp(
+    const std::string &value) const
 {
-
+    std::tm tm = {};
+    auto v = value.substr(0,12);
+    for (int i = 0; i<6; i++) {
+        v.insert(i*3+2, " ");
+    }
+    std::stringstream ss(v);
+    ss >> std::get_time(&tm, "%y %m %d %H %M %S");
+    return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
 
 uint32_t HanParser::parsePower(const std::string &value) const
